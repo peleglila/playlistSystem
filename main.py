@@ -7,8 +7,9 @@ import xlrd
 from xlutils.copy import copy
 
 # Declare the files path
-ratingDataFile = "M:/yesLineup/test.xls"
-playlistFile = "M:/yesLineup/playlist.xls"
+ratingDataFile = "F:/tests/YES/test.xls"
+#ratingDataFile = "M:/yesLineup/test.xls"
+playlistFile = "F:/tests/YES/playlist.xls"
 
 # Error mail details:
 smtpHost = 'smtp-pulse.com'
@@ -36,6 +37,7 @@ playlistTitleIDs = [int(playlistSheet.cell_value(i, 18)) for i in range(1, playl
 # Take the recommendation information
 ratingSheet = ratingBook.sheets()[0]
 
+orcaConnection = True
 ratingDict = {}
 newRatingStructure = {}
 
@@ -123,9 +125,16 @@ def main():
 
 # Read Data from O.R.C.A Api
 def readXml(titleID):
+    global orcaConnection
     url = 'http://217.109.104.6/compass/GetRecommendationListByPopularContributor?external_content_id=' + str(
         titleID) + '&client=json'
-    jsonData = json.load(urllib2.urlopen(url))
+    try:
+        jsonData = json.load(urllib2.urlopen(url))
+    except urllib2.URLError:
+        print '\n{0}--- Could not connect to ORCA API, Please contact the Administrator! ---'.format(Colors.FAIL)
+        orcaConnection = False
+        return False
+
     recommendedTitle = None
     for data in jsonData['response']:
         if data == 'status' or data == "":
@@ -139,8 +148,12 @@ def readXml(titleID):
 
 # check if there is any recommendation for the title
 def checkRecommendations(titleId, row):
-    recommendedTitle = readXml(titleId)
-    writeToExcel(recommendedTitle, row, 32)
+    global orcaConnection
+    if orcaConnection:
+        print 'what!?'
+        recommendedTitle = readXml(titleId)
+        writeToExcel(recommendedTitle, row, 32)
+
 
 
 # Check in what rating criterion the title is

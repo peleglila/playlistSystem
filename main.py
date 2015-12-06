@@ -17,8 +17,8 @@ smtpPort = 2525
 smtpUser = 'pelegl@promots.tv'
 smtpPassword = 'rE32iXgmFfjX'
 smtpSendList = ['pelegalila@gmail.com', 'pelegl@promots.tv']
-# timeToWaitMail in SECONDS
-timeToWaitMail = 0.2
+# timeToWaitMail in Minutes
+timeToWaitMail = 2
 
 # Xlrd workbook declaration
 ratingBook = xlrd.open_workbook(ratingDataFile)

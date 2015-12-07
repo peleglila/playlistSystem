@@ -7,9 +7,10 @@ import xlrd
 from xlutils.copy import copy
 
 # Declare the files path
-ratingDataFile = "F:/tests/YES/test.xls"
-#ratingDataFile = "M:/yesLineup/test.xls"
-playlistFile = "F:/tests/YES/playlist.xls"
+# ratingDataFile = "F:/tests/YES/test.xls"
+ratingDataFile = "M:/yesLineup/test.xls"
+# playlistFile = "F:/tests/YES/playlist.xls"
+playlistFile = "M:/yesLineup/playlist.xls"
 
 # Error mail details:
 smtpHost = 'smtp-pulse.com'
@@ -18,7 +19,7 @@ smtpUser = 'pelegl@promots.tv'
 smtpPassword = 'rE32iXgmFfjX'
 smtpSendList = ['pelegalila@gmail.com', 'pelegl@promots.tv']
 # timeToWaitMail in Minutes
-timeToWaitMail = 2
+timeToWaitMail = 0.2
 
 # Xlrd workbook declaration
 ratingBook = xlrd.open_workbook(ratingDataFile)
@@ -50,8 +51,8 @@ top10month = list()
 
 # Definition of the Day, Week and month date to take from
 day_ago = datetime.now() - timedelta(days=15)
-week_ago = datetime.now() - timedelta(days=22)
-month_ago = datetime.now() - timedelta(days=46)
+week_ago = datetime.now() - timedelta(days=23)
+month_ago = datetime.now() - timedelta(days=47)
 
 # Channels list
 channels = {'yes1 HD': {'playlistChannel': 'YES1', 'displayChannel': 'yes1'},
@@ -91,13 +92,13 @@ def sendErrorMail():
     from_addr = "YES Playlist System <pelegl@promots.tv>"
     to_addr = smtpSendList
 
-    subj = "ERROR : Playlist file is open - SCRIPT CAN\'T RUN"
+    subj = "ERROR:Playlist file is open - SCRIPT CAN\'T RUN"
     date = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 
     message_text = "-------------------------- ERROR -------------------------\n\n" \
-                   "date: %s\n"\
+                   "date: %s\n" \
                    "This is a mail from your YES playlist system.\n\n" \
-                   "On IP: %s\n\n"\
+                   "On IP: %s\n\n" \
                    "The file location:\n%s\n\n" \
                    "Is open and the Rating script can not run!\n" \
                    "Please close it and RUN THE SCRIPT AGAIN.\n\n" \
@@ -131,7 +132,7 @@ def readXml(titleID):
     try:
         jsonData = json.load(urllib2.urlopen(url))
     except urllib2.URLError:
-        print '\n{0}--- Could not connect to ORCA API, Please contact the Administrator! ---'.format(Colors.FAIL)
+        print '\n{0}ERROR:Could not connect to ORCA API, Please contact the Administrator!'.format(Colors.FAIL)
         orcaConnection = False
         return False
 
@@ -150,10 +151,8 @@ def readXml(titleID):
 def checkRecommendations(titleId, row):
     global orcaConnection
     if orcaConnection:
-        print 'what!?'
         recommendedTitle = readXml(titleId)
         writeToExcel(recommendedTitle, row, 32)
-
 
 
 # Check in what rating criterion the title is
@@ -202,7 +201,7 @@ def checkData(titleIds):
             checkRating(title_id, titleIndex, titleChannel)
             titleIndex += 1
         else:
-            print Colors.WARNING + 'Title ID %s - not in the rating list' % title_id
+            print '{0}INFO:Title ID %s - not in the rating list'.format(Colors.OKBLUE) % title_id
             titleIndex += 1
             continue
     saveExcel()
@@ -225,19 +224,21 @@ def saveExcel():
     counter = 1
     while True:
         if counter >= (timeToWaitMail * 60) / 2:
+            print '{0}\n------------------------------------------------------------------------------\n' \
+                  'ERROR:Could not Save the file! CLOSE THE FILE AND RUN THE SCRIPT AGAIN! BYE...' \
+                  '\n------------------------------------------------------------------------------'.format(Colors.FAIL)
             sendErrorMail()
             break
         try:
-            open(playlistFile, "r+")
+            playlistCopy.save(playlistFile)
+            #            open(playlistFile, "r+")
+            print '\n{0}SUCCEED:Writing to Playlist succeed!'.format(Colors.OKGREEN)
         except IOError:
-            print '\n{0}--- Could not Save the file! Please close Excel! ---'.format(Colors.FAIL)
+            print '\n{0}ERROR:Could not Save the file! Please close Excel!'.format(Colors.FAIL)
             counter += 1
             time.sleep(2)
             continue
         break
-
-    playlistCopy.save(playlistFile)
-    print '\n{0}--- Writing to Playlist succeed! ---'.format(Colors.OKGREEN)
 
 
 # Create the channel rating list
@@ -250,8 +251,11 @@ def topChannelRating(channel, period):
             tempRating.setdefault(rating, {'title_id': title_id})
         else:
             continue
-    tempID = tempRating[max(tempRating)]['title_id']
-    return tempID
+    try:
+        tempID = tempRating[max(tempRating)]['title_id']
+        return tempID
+    except ValueError:
+        return None
 
 
 # Create month top rating lists
@@ -301,10 +305,14 @@ def topThisDay():
         rating = newRatingStructure[title_id]['rating']
         tempRating.setdefault(rating, {'title_id': title_id})
     for i in range(0, 1):
-        tempID = tempRating[max(tempRating)]['title_id']
-        if i == 0:
-            global top1day
-            top1day = tempID
+        try:
+            tempID = tempRating[max(tempRating)]['title_id']
+            if i == 0:
+                global top1day
+                top1day = tempID
+        except ValueError:
+            print '\n{0}WARNING:No data for TODAY in rating xls'.format(Colors.WARNING)
+            top1day = None
 
 
 # Return list with indexes of movies from a given date
